@@ -18,7 +18,9 @@ export const QuestionManager = () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE}/questions`);
-      setQuestions(res.data);
+      if (res.data) {
+        setQuestions(res.data);
+      }
     } catch (err) {
       console.error('Failed to fetch questions', err);
       showMsg('error', '加载题目失败');
@@ -236,7 +238,20 @@ export const QuestionManager = () => {
 
               {editingQuestion.type === 'choice' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">选项 (A-D/E)</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-gray-700">选项 (A-Z)</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = [...(editingQuestion.options || []), ''];
+                        setEditingQuestion({...editingQuestion, options: newOpts});
+                      }}
+                      className="text-xs flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <Plus size={14} />
+                      添加选项
+                    </button>
+                  </div>
                   {editingQuestion.options?.map((opt, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
                       <span className="w-6 font-bold text-gray-400">{String.fromCharCode(65 + idx)}</span>
@@ -250,6 +265,19 @@ export const QuestionManager = () => {
                         }}
                         className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       />
+                      {(editingQuestion.options?.length || 0) > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newOpts = (editingQuestion.options || []).filter((_, i) => i !== idx);
+                            setEditingQuestion({...editingQuestion, options: newOpts});
+                          }}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="删除选项"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

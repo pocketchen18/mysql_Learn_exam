@@ -76,6 +76,26 @@ function App() {
     }
   }
 
+  const handleRemoveWrong = async (questionId: number) => {
+    try {
+      await axios.delete(`${API_BASE}/wrong-questions/${questionId}`)
+      // If we are currently viewing the wrong questions list, remove it from the local state too
+      if (selectedFilter?.type === 'wrong') {
+        const newQuestions = questions.filter(q => q.id !== questionId)
+        setQuestions(newQuestions)
+        
+        if (newQuestions.length === 0) {
+          reset() // Go back to home if no more questions
+        } else if (currentIndex >= newQuestions.length) {
+          setCurrentIndex(newQuestions.length - 1)
+        }
+      }
+      fetchStats()
+    } catch (err) {
+      console.error('Failed to remove wrong question', err)
+    }
+  }
+
   const reset = () => {
     setSelectedFilter(null)
     setQuestions([])
@@ -149,13 +169,15 @@ function App() {
             <h3 className="text-lg font-bold text-gray-900">知识点统计</h3>
           </div>
           <div className="space-y-4">
-            {Object.entries(stats.cat_stats).map(([cat, data]) => {
-              const catAccuracy = Math.round((data.correct / data.total) * 100);
+            {Object.entries(stats.cat_stats || {}).map(([cat, data]) => {
+              const total = data.total || 0;
+              const correct = data.correct || 0;
+              const catAccuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
               return (
                 <div key={cat} className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium text-gray-700">{cat}</span>
-                    <span className="text-gray-500">{data.correct}/{data.total} ({catAccuracy}%)</span>
+                    <span className="text-gray-500">{correct}/{total} ({catAccuracy}%)</span>
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div 
@@ -272,7 +294,7 @@ function App() {
                 正在练习: <span className="text-gray-600">
                   {selectedFilter.type === 'wrong' ? '错题复习' : 
                    selectedFilter.type === 'category' ? selectedFilter.id : 
-                   filters.types.find(t => t.id === selectedFilter.id)?.name}
+                   (filters?.types || []).find(t => t.id === selectedFilter.id)?.name}
                 </span>
               </div>
             </div>
@@ -299,6 +321,8 @@ function App() {
                     setCurrentIndex(prev => prev - 1)
                   }
                 }}
+                onRemoveWrong={handleRemoveWrong}
+                isWrongMode={selectedFilter?.type === 'wrong'}
               />
             ) : (
               <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-2xl">

@@ -253,6 +253,15 @@ def get_wrong_questions():
     wrong_ids = progress.get("wrong_questions", [])
     return [q for q in questions_db if q["id"] in wrong_ids]
 
+@app.delete("/api/wrong-questions/{question_id}")
+def remove_wrong_question(question_id: int):
+    progress = load_progress()
+    if "wrong_questions" in progress and question_id in progress["wrong_questions"]:
+        progress["wrong_questions"].remove(question_id)
+        save_progress(progress)
+        return {"status": "success"}
+    raise HTTPException(status_code=404, detail="Question not found in wrong questions")
+
 # Serve static files from the frontend build
 if os.path.exists(STATIC_DIR):
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

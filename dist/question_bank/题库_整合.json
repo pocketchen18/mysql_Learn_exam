@@ -1781,7 +1781,8 @@
     "options": [
       "DECLARE x char(10) DEFAULT 'outer '",
       "DECLARE x char DEFAULT 'outer '",
-      "DECLARE x char(10) DEFAULT outer"
+      "DECLARE x char(10) DEFAULT outer",
+      "DECLARE x DEFAULT 'outer '"
     ],
     "answer": "A",
     "explanation": ""

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Question } from '../types';
-import { CheckCircle2, XCircle, Info } from 'lucide-react';
+import { CheckCircle2, XCircle, Info, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -13,6 +13,8 @@ interface QuestionCardProps {
   onNext: () => void;
   onPrevious: () => void;
   onAnswer?: (isCorrect: boolean) => void;
+  onRemoveWrong?: (questionId: number) => void;
+  isWrongMode?: boolean;
   currentIndex: number;
   total: number;
 }
@@ -22,6 +24,8 @@ export const QuestionCard = ({
   onNext,
   onPrevious,
   onAnswer,
+  onRemoveWrong,
+  isWrongMode,
   currentIndex,
   total,
 }: QuestionCardProps) => {
@@ -65,7 +69,7 @@ export const QuestionCard = ({
       case 'choice':
         return (
           <div className="grid gap-3">
-            {question.options.map((option, idx) => {
+            {(question.options || []).map((option, idx) => {
               const letter = String.fromCharCode(65 + idx);
               const isSelected = selectedOption === option;
               const isAnswer = question.answer === letter;
@@ -213,13 +217,25 @@ export const QuestionCard = ({
       )}
 
       <div className="flex justify-between pt-6 border-t">
-        <button
-          onClick={onPrevious}
-          disabled={currentIndex === 0}
-          className="px-6 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-        >
-          上一题
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onPrevious}
+            disabled={currentIndex === 0}
+            className="px-6 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+          >
+            上一题
+          </button>
+          {isWrongMode && onRemoveWrong && (
+            <button
+              onClick={() => question.id && onRemoveWrong(question.id)}
+              className="px-4 py-2 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1"
+              title="从错题本中移除"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">移除</span>
+            </button>
+          )}
+        </div>
         {!showResult ? (
           <button
             onClick={handleSubmit}
