@@ -1,0 +1,175 @@
+一、单选题
+1、要保证数据库中数据的逻辑独立性，需要修改（	）。
+A. 模式与外模式之间的映射
+B. 模式与内模式之间的映射
+C. 模式
+D. 三级模式
+2、下面给出的条目中，不属于数据库技术的主要特点的是（	）。
+A. 数据的结构化	B. 数据的冗余度小
+C. 较高的数据独立性	D. 程序的标准化
+3、关系代数的 5 种基本运算是（	）。
+A. 并、差、选择、投影、自然连接
+B. 并、差、交、选择、笛卡尔积
+C. 并、差、交、投影、笛卡尔积
+D. 并、差、选择、投影、笛卡尔积
+4、关系数据库中的关系是指（	）。
+A. 数据的存储方式
+B. 表与表之间的连接
+C. 二维表
+D. 数据的层次结构
+5、在SQL中，以下哪个命令用于创建表？（	）。
+A. CREATE TABLE
+B. CREATE DATABASE
+C. CREATE INDEX
+D. CREATE VIEW
+6、对实体以及实体之间的联系采用同样的数据结构表达的数据模型为
+（	）。
+A. 网状模型	B. 关系模型	C. 层次模型	D. 文件模型
+7、下面不属于数据冗余可能引起的问题是（   ）。
+A. 冗余存储	B. 更新异常	C. 插入、删除异常	D. 查询异常
+8、MySQL数据库四种特性，不包括（    ）。
+A.原子性		B.事务性		C.一致性		D.隔离性
+9、SQL语言通常称为（   ）。
+A、结构化操纵语言		B、结构化控制语言
+C、结构化定义语言		D、结构化查询语言
+10、光标的一般使用步骤，以下正确的是（    ）。
+A．声明光标 使用光标 打开光标 关闭光标
+B．打开光标 声明光标 使用光标 关闭光标
+C．声明光标 打开光标 选择光标 关闭光标 
+D．声明光标 打开光标 使用光标 关闭光标
+11、以下哪种操作能够实现实体完整性(    ) 。
+A．设置唯一键 	B．设置外键 	C．减少数据冗余 	D．设置主键
+12、在创建触发器时，不能使用（         ）触发事件。
+A．INSERT	      B．CREATE	      C．UPDATE        D．DELETE
+13、MySQL中存储过程的建立以关键字（         ）开始，后面仅跟存储过程的名称和参数。
+A．CREATE FUNCTION	      		B．CREATE TRIGGER
+C．CREATE PROCEDURE           	D．CREATE VIEW
+14、在SQL语言中，子查询是（   ）。 
+A．选取单表中字段子集的查询语句 
+B．选取多表中字段子集的查询语句 
+C．返回单表中数据子集的查询语言 
+D．嵌入到另一个查询语句之中的查询语句 
+15、下列SQL语句中，用于修改表数据的语句是（    ）。
+A． UPDATE 	B．SELECT  	C．ALTER		D．INSERT
+16、在MySQL中，可以使用（        ）命令开启一个事务。
+A．START TRANSACTION		B．BEGIN
+C．BEGIN WORK				D．以上都是
+17、下面声明变量正确的是（    ）。
+A．DECLARE x char(10) DEFAULT 'outer '
+B．DECLARE x char DEFAULT 'outer '
+C．DECLARE x char(10) DEFAULT outer 
+D．DECLARE x DEFAULT 'outer '
+18、MySQL的默认端口号为（         ）。
+A．3306		B．1433			C．3307		D．1521
+19、查找条件为：姓名不是NULL的记录(    ) 。
+A．WHERE NAME ! NULL 			 B．WHERE NAME NOT NULL 
+C．WHERE NAME IS NOT NULL		 D．WHERE NAME!=NULL 
+20、使用SQL语句进行分组检索时，为了去掉不满足条件的分组，应当（   ）。
+A.使用WHERE子句        
+B.在GROUPBY后面使用HAVING子句
+C.先使用WHERE子句，再使用HAVING子句
+D.先使用HAVING子句，再使用WHERE子句
+21、下面（    ）选项不是ANSI/ISO SQL规范提供的隔离级别。
+A．SERIALIZABLE
+B．REPEATABLE READ
+C．READ ROLLBACK
+D．READ UNCOMMITTED
+22、用于将事务处理写到数据库的命令是(     )。 
+A．insert 		B．rollback 		C．commit 		D．savepoint
+
+
+二、填空题
+1、数据模型通常由数据结构、数据操作和 	 3 部分组成。
+2、设关系 R 和 S 的属性个数分别为 r 和 s，则 R×S 的操作结果的属性个数为 	 。
+3、MySQL默认的用户是	。 
+4、在MySQL中，查询表中数据时，可用	关键字滤掉重复行。
+5、调用存储函数使用	             关键字。
+6、查询选修了“计算机原理”课程的同学姓名的查询语句如下，请补全代
+码：
+SELECT studentName, classNo FROM Student x
+WHERE	
+( SELECT * FROM Score a, Course b WHERE a.courseNo=b.courseNo AND a.studentNo=x.studentNo
+AND courseName='计算机原理' )
+
+7、在E-R图中，每个实体通常对应一张		，实体的属性对应于	。
+8、MySQL中可以使用	            语句选择一个数据库，使其成为当前默认数据库。
+9、删除数据库的操作可以使用	                语句。
+10、MySQL支持的约束类型中	             表示主键约束；	                  表示外键约束；	            表示默认值约束；	            表示唯一约束；	                 表示非空约束。
+11、数据库中只存放视图的	        ，而不存放视图对应的数据，这些数据仍存放在导出视图的基本表中。
+
+
+三、简答题
+1、为什么数据库管理系统中的数据能够具有较高的逻辑独立性和物理独立性。
+2、说明在 MySQL 里 INSERT INTO 语句有哪几种常见的插入数据方式。
+3、解释 MySQL 中 UPDATE 语句的作用以及使用时需要注意的要点。
+4、请阐述 DELETE 语句在 MySQL 里的用途和使用时的关键注意事项。
+5、描述 MySQL 中索引的作用以及常见的索引类型有哪些。
+6、MySQL中包含哪些聚合函数，它们的作用都是什么？
+7、数据库中的视图（View）和表（Table）有什么区别？
+8、简述 MySQL 中事务的概念以及事务的四大特性（ACID）分别是什么？
+
+
+四、应用题
+现有一学生数据库，学生数据库中有基本表student、course和sc表。
+三张表的表结构如下：
+student（学生表）结构
+sc（选课表）结构
+
+course（课程表）结构
+以下题目均使用上述的数据库，请用SQL语言完成下面的操作。
+1、查询年龄在18～20之间且性别为“男”的学生的姓名、年龄。
+2、查询电计系学生的最大年龄。
+3、查询姓“东方”且姓名只有3个汉字的学生信息。
+4、向 student 表中插入一条新的学生记录，学号为 ‘S000001’，姓名为 ‘张三’，身份证号为 ‘123456789012345678’，性别为 ‘男’，年龄为 20，所在系为 ‘计算机系’。
+5、为 course 表添加一门新的课程，课程号为 ‘C00001’，课程名为 ‘数据库原理’，学分是 3.0，学期为 3。
+5、从 student 表中查询出所有年龄大于 25 岁的学生信息。
+6、找出 sc 表中成绩大于 80 分的选课记录。
+7、查询 student 表中所在系为 ‘数学系’ 的学生的学号和姓名。
+8、计算 sc 表中每门课程的平均成绩，显示课程号和对应的平均成绩。
+9、删除 student 表中学号为 ‘S000002’ 的学生记录。
+
+
+五、编程题
+根据表employees表的内容，并根据要求编写SQL代码
+表employees
+
+
+
+
+
+
+
+
+
+
+
+1、编写一条SQL语句，查询department为"IT"的所有员工，并按照salary降序排列，显示name、department和salary三列。
+2、编写一条SQL语句，计算各部门（department）的平均薪资（salary），并只显示平均薪资高于 65000的部门，结果按平均薪资降序排列。
+
+3、编写一条SQL语句，查询在 2020年之后入职的员工（hire_date> '2020-12-31'），显示name、department和hire_date，并按hire_date升序排列。
+4、编写一条SQL语句，查询department为"Finance"且salary大于 75000的员工，显示所有列，并按照salary升序排列。
+5、编写一条SQL语句，统计HR部门的员工数量。
+
+
+
+
+
+
+
+
+列名	含义	数据类型	约束
+sno	学号	CHAR(7)	主码
+sname	姓名	NCHAR(5)	非空
+sid	身份证号	CHAR(18)	取值不重
+ssex	性别	NCHAR(1)	默认值为“男”
+sage	年龄	TINYINT	取值范围为15~45
+sdept	所在系	NVARCHAR(20)	
+列名	含义	数据类型	约束
+sno	学号	CHAR(7)	主码列，引用Student的外码
+cno	课程名	CHAR(6)	主码列，引用Course的外码
+grade	成绩	TINYINT	
+列名	含义	数据类型	约束
+cno	课程号	CHAR(6)	主码
+cname	课程名	NVARCHAR(20)	非空
+credit	学分	NUMERIC(3,1)	大于0
+semester	学期	TINYINT	
