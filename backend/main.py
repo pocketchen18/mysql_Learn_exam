@@ -1,9 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import json
 import os
+import sys
+import webbrowser
+import uvicorn
+import multiprocessing
 
 app = FastAPI()
 
@@ -16,12 +22,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Paths
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "question_bank", "题库_整合.json")
-PROGRESS_PATH = os.path.join(os.path.dirname(__file__), "..", "user_progress.json")
+# Base path for the application
+if getattr(sys, 'frozen', False):
+    # If the app is frozen (packaged by PyInstaller)
+    BASE_DIR = os.path.dirname(sys.executable)
+    # Resources (like the frontend dist) are in sys._MEIPASS
+    RESOURCES_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+else:
+    # If the app is running in a normal Python environment
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    RESOURCES_DIR = BASE_DIR
+
+# Paths for data (should be in the same folder as the executable or project root)
+DATA_PATH = os.path.join(BASE_DIR, "question_bank", "题库_整合.json")
+PROGRESS_PATH = os.path.join(BASE_DIR, "user_progress.json")
+
+# Path for static files (frontend dist)
+STATIC_DIR = os.path.join(RESOURCES_DIR, "frontend", "dist")
 
 def load_questions():
     if not os.path.exists(DATA_PATH):
+        # Fallback to internal path if not found in BASE_DIR (e.g. first run)
+        internal_data = os.path.join(RESOURCES_DIR, "question_bank", "题库_整合.json")
+        if os.path.exists(internal_data):
+            return json.load(open(internal_data, "r", encoding="utf-8"))
         return []
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -43,10 +67,14 @@ def save_progress(progress):
         json.dump(progress, f, ensure_ascii=False, indent=2)
 
 def save_questions(questions):
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(questions, f, ensure_ascii=False, indent=2)
 
 questions_db = load_questions()
+
+# ... (Keep existing models and API routes)
 
 class Question(BaseModel):
     id: Optional[int] = None
@@ -225,6 +253,37 @@ def get_wrong_questions():
     wrong_ids = progress.get("wrong_questions", [])
     return [q for q in questions_db if q["id"] in wrong_ids]
 
+# Serve static files from the frontend build
+if os.path.exists(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Frontend not found. Please build the frontend first."}
+
+def open_browser():
+    webbrowser.open("http://127.0.0.1:8000")
+
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Fix for PyInstaller windowed mode where sys.stdout/stderr are None
+    if getattr(sys, 'frozen', False):
+        if sys.stdout is None:
+            sys.stdout = open(os.devnull, 'w')
+        if sys.stderr is None:
+            sys.stderr = open(os.devnull, 'w')
+
+    # In production, we don't want reload
+    is_prod = getattr(sys, 'frozen', False)
+    
+    if is_prod:
+        # Open browser in a separate thread/process
+        multiprocessing.freeze_support()
+        import threading
+        threading.Timer(1.5, open_browser).start()
+        # Use log_config=None to avoid uvicorn's default logging config crash in frozen apps
+        uvicorn.run(app, host="127.0.0.1", port=8000, log_config=None)
+    else:
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

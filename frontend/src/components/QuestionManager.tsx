@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Search, Plus, Edit2, Trash2, Upload, X, Check, AlertCircle, FileJson } from 'lucide-react';
 import type { Question, QuestionType } from '../types';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 export const QuestionManager = () => {
   const [questions, setQuestions] = useState<Question[]>([]);

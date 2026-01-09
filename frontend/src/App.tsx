@@ -11,7 +11,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const API_BASE = 'http://localhost:8000/api'
+const API_BASE = '/api'
 
 type TabType = 'type' | 'wrong' | 'stats' | 'admin';
 
