@@ -53,7 +53,7 @@ class Question(BaseModel):
     type: str
     category: str
     question: str
-    options: List[str]
+    options: List[str] = []
     answer: str
     explanation: str
 
@@ -227,4 +227,4 @@ def get_wrong_questions():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
