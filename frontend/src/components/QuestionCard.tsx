@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Question } from '../types';
-import { CheckCircle2, XCircle, Info, Trash2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Info, Trash2, Flame } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -17,6 +17,7 @@ interface QuestionCardProps {
   isWrongMode?: boolean;
   currentIndex: number;
   total: number;
+  streakMessage?: string | null;
 }
 
 export const QuestionCard = ({
@@ -28,6 +29,7 @@ export const QuestionCard = ({
   isWrongMode,
   currentIndex,
   total,
+  streakMessage,
 }: QuestionCardProps) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [fillAnswer, setFillAnswer] = useState('');
@@ -202,8 +204,14 @@ export const QuestionCard = ({
             )
           )}
           <div className="flex-1">
-            <div className="font-bold">
-              {question.type === 'short_answer' ? '参考答案：' : (isCorrect() ? '回答正确！' : '回答错误')}
+            <div className="font-bold flex items-center justify-between">
+              <span>{question.type === 'short_answer' ? '参考答案：' : (isCorrect() ? '回答正确！' : '回答错误')}</span>
+              {isCorrect() && streakMessage && (
+                <span className="flex items-center gap-1 text-orange-600 animate-bounce">
+                  <Flame className="w-4 h-4 fill-current" />
+                  {streakMessage}
+                </span>
+              )}
             </div>
             <div className="mt-1 whitespace-pre-wrap">{question.type === 'short_answer' ? question.answer : `正确答案：${question.answer}`}</div>
             {question.explanation && (

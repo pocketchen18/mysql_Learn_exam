@@ -23,6 +23,8 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('type')
   const [stats, setStats] = useState<Stats | null>(null)
+  const [streak, setStreak] = useState(0)
+  const [streakMessage, setStreakMessage] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFilters()
@@ -50,6 +52,8 @@ function App() {
   const startQuiz = async (filterId: string, filterType: 'category' | 'type' | 'wrong') => {
     setLoading(true)
     setSelectedFilter({ id: filterId, type: filterType })
+    setStreak(0)
+    setStreakMessage(null)
     try {
       let url = ''
       if (filterType === 'category') url = `${API_BASE}/questions?category=${filterId}`
@@ -68,6 +72,28 @@ function App() {
   }
 
   const handleAnswer = async (questionId: number, isCorrect: boolean) => {
+    if (isCorrect) {
+      const newStreak = streak + 1
+      setStreak(newStreak)
+      
+      // 设置连对鼓励语
+      if (newStreak >= 2) {
+        let msg = ""
+        if (newStreak === 2) msg = "手感不错！连对 2 题了！"
+        else if (newStreak === 3) msg = "太棒了！连对 3 题，继续保持！"
+        else if (newStreak === 5) msg = "火力全开！竟然连对了 5 题！"
+        else if (newStreak === 10) msg = "超神了！10 连对！你是 MySQL 大神吗？"
+        else if (newStreak % 5 === 0) msg = `不可思议！已经连对 ${newStreak} 题了！`
+        else msg = `连对 ${newStreak} 题，势如破竹！`
+        setStreakMessage(msg)
+      } else {
+        setStreakMessage(null)
+      }
+    } else {
+      setStreak(0)
+      setStreakMessage(null)
+    }
+
     try {
       await axios.post(`${API_BASE}/report`, { question_id: questionId, is_correct: isCorrect })
       fetchStats() // Refresh stats after each answer
@@ -100,6 +126,8 @@ function App() {
     setSelectedFilter(null)
     setQuestions([])
     setCurrentIndex(0)
+    setStreak(0)
+    setStreakMessage(null)
     fetchStats() // Refresh stats when returning to main page
   }
 
@@ -309,7 +337,9 @@ function App() {
                 currentIndex={currentIndex}
                 total={questions.length}
                 onAnswer={(isCorrect) => handleAnswer(questions[currentIndex].id, isCorrect)}
+                streakMessage={streakMessage}
                 onNext={() => {
+                  setStreakMessage(null) // Clear message for next question
                   if (currentIndex < questions.length - 1) {
                     setCurrentIndex(prev => prev + 1)
                   } else {
