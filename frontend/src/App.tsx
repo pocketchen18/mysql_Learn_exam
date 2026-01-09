@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import type { Question, Filters, FilterItem, Stats } from './types'
 import { QuestionCard } from './components/QuestionCard'
-import { BookOpen, ChevronRight, Layout, RefreshCw, ListFilter, Tag, Trophy, AlertCircle, BarChart3, PieChart } from 'lucide-react'
+import { QuestionManager } from './components/QuestionManager'
+import { BookOpen, ChevronRight, Layout, RefreshCw, ListFilter, Tag, Trophy, AlertCircle, BarChart3, PieChart, Settings } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -12,7 +13,7 @@ function cn(...inputs: ClassValue[]) {
 
 const API_BASE = 'http://localhost:8000/api'
 
-type TabType = 'type' | 'wrong' | 'stats';
+type TabType = 'type' | 'wrong' | 'stats' | 'admin';
 
 function App() {
   const [filters, setFilters] = useState<Filters>({ categories: [], types: [] })
@@ -208,44 +209,54 @@ function App() {
         {!selectedFilter ? (
           <div className="space-y-8">
             {/* Tabs */}
-            <div className="flex justify-center">
-              <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex">
-                <button
-                  onClick={() => setActiveTab('type')}
-                  className={cn(
-                    "px-8 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2",
-                    activeTab === 'type' ? "bg-blue-600 text-white shadow-md" : "text-gray-500 hover:text-blue-600"
-                  )}
-                >
-                  <ListFilter className="w-4 h-4" />
-                  按题型分类
-                </button>
-                <button
-                  onClick={() => setActiveTab('wrong')}
-                  className={cn(
-                    "px-8 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2",
-                    activeTab === 'wrong' ? "bg-blue-600 text-white shadow-md" : "text-gray-500 hover:text-blue-600"
-                  )}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  错题本
-                </button>
-                <button
-                  onClick={() => setActiveTab('stats')}
-                  className={cn(
-                    "px-8 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2",
-                    activeTab === 'stats' ? "bg-blue-600 text-white shadow-md" : "text-gray-500 hover:text-blue-600"
-                  )}
-                >
-                  <PieChart className="w-4 h-4" />
-                  统计看板
-                </button>
-              </div>
+            <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 mb-8 w-fit mx-auto">
+              <button 
+                onClick={() => setActiveTab('type')}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2",
+                  activeTab === 'type' ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-gray-500 hover:text-gray-700"
+                )}
+              >
+                <Layout className="w-4 h-4" />
+                题库分类
+              </button>
+              <button 
+                onClick={() => setActiveTab('wrong')}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2",
+                  activeTab === 'wrong' ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-gray-500 hover:text-gray-700"
+                )}
+              >
+                <AlertCircle className="w-4 h-4" />
+                错题本
+              </button>
+              <button 
+                onClick={() => setActiveTab('stats')}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2",
+                  activeTab === 'stats' ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-gray-500 hover:text-gray-700"
+                )}
+              >
+                <PieChart className="w-4 h-4" />
+                学习统计
+              </button>
+              <button 
+                onClick={() => setActiveTab('admin')}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2",
+                  activeTab === 'admin' ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-gray-500 hover:text-gray-700"
+                )}
+              >
+                <Settings className="w-4 h-4" />
+                题库管理
+              </button>
             </div>
 
+            {/* Content Area */}
             {activeTab === 'type' && renderFilterGrid(filters.types, 'type')}
             {activeTab === 'wrong' && renderWrongQuestions()}
             {activeTab === 'stats' && renderStats()}
+            {activeTab === 'admin' && <QuestionManager />}
           </div>
         ) : (
           <div className="flex flex-col items-center space-y-8 animate-in fade-in duration-500">

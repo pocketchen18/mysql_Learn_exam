@@ -42,16 +42,23 @@ def save_progress(progress):
     with open(PROGRESS_PATH, "w", encoding="utf-8") as f:
         json.dump(progress, f, ensure_ascii=False, indent=2)
 
+def save_questions(questions):
+    with open(DATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(questions, f, ensure_ascii=False, indent=2)
+
 questions_db = load_questions()
 
 class Question(BaseModel):
-    id: int
+    id: Optional[int] = None
     type: str
     category: str
     question: str
     options: List[str]
     answer: str
     explanation: str
+
+class ImportRequest(BaseModel):
+    questions: List[Question]
 
 class ReportRequest(BaseModel):
     question_id: int
@@ -85,12 +92,82 @@ def get_filters():
 
 @app.get("/api/questions", response_model=List[Question])
 def get_questions(category: Optional[str] = None, type: Optional[str] = None):
+    global questions_db
+    questions_db = load_questions() # Reload to get latest
     filtered = questions_db
     if category:
         filtered = [q for q in filtered if q["category"] == category]
     if type:
         filtered = [q for q in filtered if q["type"] == type]
     return filtered
+
+@app.post("/api/questions", response_model=Question)
+def add_question(question: Question):
+    global questions_db
+    questions_db = load_questions()
+    
+    # Generate new ID if not provided
+    if question.id is None:
+        new_id = max([q["id"] for q in questions_db], default=0) + 1
+        question.id = new_id
+    
+    # Check if ID already exists
+    for i, q in enumerate(questions_db):
+        if q["id"] == question.id:
+            questions_db[i] = question.dict()
+            save_questions(questions_db)
+            return question
+
+    questions_db.append(question.dict())
+    save_questions(questions_db)
+    return question
+
+@app.put("/api/questions/{question_id}", response_model=Question)
+def update_question(question_id: int, question: Question):
+    global questions_db
+    questions_db = load_questions()
+    
+    for i, q in enumerate(questions_db):
+        if q["id"] == question_id:
+            updated_question = question.dict()
+            updated_question["id"] = question_id # Ensure ID doesn't change
+            questions_db[i] = updated_question
+            save_questions(questions_db)
+            return updated_question
+            
+    raise HTTPException(status_code=404, detail="Question not found")
+
+@app.delete("/api/questions/{question_id}")
+def delete_question(question_id: int):
+    global questions_db
+    questions_db = load_questions()
+    
+    initial_len = len(questions_db)
+    questions_db = [q for q in questions_db if q["id"] != question_id]
+    
+    if len(questions_db) == initial_len:
+        raise HTTPException(status_code=404, detail="Question not found")
+        
+    save_questions(questions_db)
+    return {"status": "success"}
+
+@app.post("/api/questions/import")
+def import_questions(data: ImportRequest):
+    global questions_db
+    questions_db = load_questions()
+    
+    max_id = max([q["id"] for q in questions_db], default=0)
+    
+    new_questions = []
+    for q in data.questions:
+        max_id += 1
+        q_dict = q.dict()
+        q_dict["id"] = max_id
+        new_questions.append(q_dict)
+        
+    questions_db.extend(new_questions)
+    save_questions(questions_db)
+    return {"status": "success", "count": len(new_questions)}
 
 @app.get("/api/questions/{question_id}", response_model=Question)
 def get_question(question_id: int):

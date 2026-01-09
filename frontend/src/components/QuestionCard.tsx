@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Question } from '../types';
 import { CheckCircle2, XCircle, Info } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
