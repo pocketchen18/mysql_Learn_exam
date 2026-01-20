@@ -9,6 +9,9 @@ export const QuestionManager = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [categories, setCategories] = useState<string[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<Partial<Question> | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importData, setImportData] = useState('');
@@ -20,6 +23,9 @@ export const QuestionManager = () => {
       const res = await axios.get(`${API_BASE}/questions`);
       if (res.data) {
         setQuestions(res.data);
+        // Extract unique categories
+        const cats = Array.from(new Set(res.data.map((q: Question) => q.category))).filter(Boolean) as string[];
+        setCategories(cats.sort());
       }
     } catch (err) {
       console.error('Failed to fetch questions', err);
@@ -83,10 +89,13 @@ export const QuestionManager = () => {
     }
   };
 
-  const filteredQuestions = questions.filter(q => 
-    q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    q.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         q.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || q.category === selectedCategory;
+    const matchesType = selectedType === 'all' || q.type === selectedType;
+    return matchesSearch && matchesCategory && matchesType;
+  });
 
   if (loading) return <div className="text-center py-12">加载中...</div>;
 
@@ -102,15 +111,40 @@ export const QuestionManager = () => {
       )}
 
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="搜索题目或分类..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-          />
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="搜索题目..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+            />
+          </div>
+          
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+          >
+            <option value="all">所有分类</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+          >
+            <option value="all">所有类型</option>
+            <option value="choice">选择题</option>
+            <option value="true_false">判断题</option>
+            <option value="fill">填空题</option>
+            <option value="short_answer">简答题</option>
+          </select>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <button

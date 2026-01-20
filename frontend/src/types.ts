@@ -1,4 +1,5 @@
 export type QuestionType = 'choice' | 'fill' | 'true_false' | 'short_answer';
+export type PracticeMode = 'all' | 'done' | 'undone' | 'recommend';
 
 export type Question = {
   id: number;

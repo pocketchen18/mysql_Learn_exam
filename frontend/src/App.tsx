@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import type { Question, Filters, FilterItem, Stats } from './types'
+import type { Question, Filters, Stats, PracticeMode } from './types'
 import { QuestionCard } from './components/QuestionCard'
 import { QuestionManager } from './components/QuestionManager'
-import { BookOpen, ChevronRight, Layout, RefreshCw, ListFilter, Tag, Trophy, AlertCircle, BarChart3, PieChart, Settings } from 'lucide-react'
+import { BookOpen, ChevronRight, Layout, RefreshCw, ListFilter, Tag, Trophy, AlertCircle, BarChart3, PieChart, Settings, CheckCircle2, Circle, Sparkles } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -25,10 +25,20 @@ function App() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [streak, setStreak] = useState(0)
   const [streakMessage, setStreakMessage] = useState<string | null>(null)
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>('undone')
 
   useEffect(() => {
     fetchFilters()
     fetchStats()
+
+    // Heartbeat mechanism to close backend when frontend is closed
+    const sendHeartbeat = () => {
+      axios.post(`${API_BASE}/heartbeat`).catch(() => {});
+    };
+    sendHeartbeat(); // Initial heartbeat
+    const heartbeatInterval = setInterval(sendHeartbeat, 5000); // Every 5 seconds
+
+    return () => clearInterval(heartbeatInterval);
   }, [])
 
   const fetchFilters = async () => {
@@ -49,20 +59,26 @@ function App() {
     }
   }
 
-  const startQuiz = async (filterId: string, filterType: 'category' | 'type' | 'wrong') => {
+  const startQuiz = async (filterId: string, filterType: 'category' | 'type' | 'wrong' | 'mode') => {
     setLoading(true)
-    setSelectedFilter({ id: filterId, type: filterType })
+    setSelectedFilter({ id: filterId, type: filterType === 'mode' ? 'type' : filterType })
     setStreak(0)
     setStreakMessage(null)
     try {
       let url = ''
-      if (filterType === 'category') url = `${API_BASE}/questions?category=${filterId}`
-      else if (filterType === 'type') url = `${API_BASE}/questions?type=${filterId}`
+      if (filterType === 'category') url = `${API_BASE}/questions?category=${filterId}&mode=${practiceMode}`
+      else if (filterType === 'type') url = `${API_BASE}/questions?type=${filterId}&mode=${practiceMode}`
       else if (filterType === 'wrong') url = `${API_BASE}/wrong-questions`
+      else if (filterType === 'mode') url = `${API_BASE}/questions?mode=${filterId}`
       
       const res = await axios.get(url)
-      const shuffled = [...res.data].sort(() => Math.random() - 0.5)
-      setQuestions(shuffled)
+      // For "recommend" mode, the backend already sorted/mixed them, 
+      // but if the user wants random, we can still shuffle unless it's recommend mode
+      let data = res.data;
+      if (filterId !== 'recommend' && filterType !== 'mode') {
+        data = [...res.data].sort(() => Math.random() - 0.5);
+      }
+      setQuestions(data)
       setCurrentIndex(0)
     } catch (err) {
       console.error('Failed to fetch questions', err)
@@ -131,25 +147,112 @@ function App() {
     fetchStats() // Refresh stats when returning to main page
   }
 
-  const renderFilterGrid = (items: FilterItem[], type: 'category' | 'type') => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {items.map((item) => (
+  const renderPracticeModes = () => (
+    <div className="mb-10 space-y-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Sparkles className="w-5 h-5 text-blue-600" />
+        <h3 className="text-lg font-bold text-gray-900">第一步：选择练习范围</h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
-          key={item.id}
-          onClick={() => startQuiz(item.id, type)}
-          className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition-all text-left"
+          onClick={() => setPracticeMode('undone')}
+          className={cn(
+            "flex items-center justify-between p-4 rounded-2xl border transition-all",
+            practiceMode === 'undone' 
+              ? "bg-blue-50 border-blue-200 text-blue-700 shadow-sm" 
+              : "bg-white border-gray-100 text-gray-600 hover:border-blue-200"
+          )}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                {type === 'category' ? <Tag className="w-5 h-5" /> : <ListFilter className="w-5 h-5" />}
-              </div>
-              <span className="font-semibold text-gray-700">{item.name}</span>
+          <div className="flex items-center gap-3">
+            <div className={cn("p-2 rounded-lg", practiceMode === 'undone' ? "bg-blue-600 text-white" : "bg-gray-100")}>
+              <BookOpen className="w-5 h-5" />
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
+            <div className="text-left">
+              <div className="font-bold">未做题目</div>
+              <div className="text-xs opacity-70">只练习还没做过的题</div>
+            </div>
           </div>
+          {practiceMode === 'undone' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5 opacity-20" />}
         </button>
-      ))}
+
+        <button
+          onClick={() => setPracticeMode('done')}
+          className={cn(
+            "flex items-center justify-between p-4 rounded-2xl border transition-all",
+            practiceMode === 'done' 
+              ? "bg-blue-50 border-blue-200 text-blue-700 shadow-sm" 
+              : "bg-white border-gray-100 text-gray-600 hover:border-blue-200"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn("p-2 rounded-lg", practiceMode === 'done' ? "bg-blue-600 text-white" : "bg-gray-100")}>
+              <RefreshCw className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <div className="font-bold">已做题目</div>
+              <div className="text-xs opacity-70">复习已经完成的题目</div>
+            </div>
+          </div>
+          {practiceMode === 'done' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5 opacity-20" />}
+        </button>
+
+        <button
+          onClick={() => setPracticeMode('recommend')}
+          className={cn(
+            "flex items-center justify-between p-4 rounded-2xl border transition-all",
+            practiceMode === 'recommend' 
+              ? "bg-blue-50 border-blue-200 text-blue-700 shadow-sm" 
+              : "bg-white border-gray-100 text-gray-600 hover:border-blue-200"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn("p-2 rounded-lg", practiceMode === 'recommend' ? "bg-blue-600 text-white" : "bg-gray-100")}>
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <div className="font-bold">智能推荐</div>
+              <div className="text-xs opacity-70">优先错题与未做题</div>
+            </div>
+          </div>
+          {practiceMode === 'recommend' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5 opacity-20" />}
+        </button>
+      </div>
+
+      <div className="pt-6 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-500">
+        <div className="flex items-center gap-2 mb-4">
+          <ListFilter className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-bold text-gray-900">第二步：选择题目类型</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {filters.types.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => startQuiz(item.id, 'type')}
+              className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition-all text-left flex flex-col gap-3"
+            >
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors w-fit">
+                <Tag className="w-4 h-4" />
+              </div>
+              <div className="flex items-center justify-between w-full">
+                <span className="font-semibold text-gray-700">{item.name}</span>
+                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+              </div>
+            </button>
+          ))}
+          <button
+            onClick={() => startQuiz(practiceMode, 'mode')}
+            className="group bg-blue-600 p-4 rounded-xl shadow-lg shadow-blue-100 border border-blue-600 hover:bg-blue-700 transition-all text-left flex flex-col gap-3 text-white"
+          >
+            <div className="p-2 bg-white/20 rounded-lg w-fit">
+              <Layout className="w-4 h-4" />
+            </div>
+            <div className="flex items-center justify-between w-full">
+              <span className="font-bold">全部类型</span>
+              <ChevronRight className="w-4 h-4 text-white/70" />
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   )
 
@@ -303,7 +406,11 @@ function App() {
             </div>
 
             {/* Content Area */}
-            {activeTab === 'type' && renderFilterGrid(filters.types, 'type')}
+            {activeTab === 'type' && (
+              <div className="space-y-8">
+                {renderPracticeModes()}
+              </div>
+            )}
             {activeTab === 'wrong' && renderWrongQuestions()}
             {activeTab === 'stats' && renderStats()}
             {activeTab === 'admin' && <QuestionManager />}
@@ -321,8 +428,13 @@ function App() {
               <div className="text-sm font-medium text-gray-400">
                 正在练习: <span className="text-gray-600">
                   {selectedFilter.type === 'wrong' ? '错题复习' : 
-                   selectedFilter.type === 'category' ? selectedFilter.id : 
-                   (filters?.types || []).find(t => t.id === selectedFilter.id)?.name}
+                   `${(filters?.types || []).find(t => t.id === selectedFilter.id)?.name || 
+                      (filters?.categories || []).find(c => c.id === selectedFilter.id)?.name || 
+                      '全部题目'} (${
+                     practiceMode === 'all' ? '全部' : 
+                     practiceMode === 'done' ? '已做' : 
+                     practiceMode === 'undone' ? '未做' : '智能推荐'
+                   })`}
                 </span>
               </div>
             </div>

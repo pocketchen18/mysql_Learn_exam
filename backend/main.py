@@ -10,8 +10,26 @@ import sys
 import webbrowser
 import uvicorn
 import multiprocessing
+import time
+import threading
 
 app = FastAPI()
+
+last_heartbeat = time.time()
+
+@app.post("/api/heartbeat")
+def heartbeat():
+    global last_heartbeat
+    last_heartbeat = time.time()
+    return {"status": "ok"}
+
+def monitor_heartbeat():
+    global last_heartbeat
+    while True:
+        time.sleep(5)
+        # If no heartbeat for 15 seconds, exit
+        if time.time() - last_heartbeat > 15:
+            os._exit(0)
 
 # Enable CORS
 app.add_middleware(
@@ -33,9 +51,23 @@ else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     RESOURCES_DIR = BASE_DIR
 
-# Paths for data (should be in the same folder as the executable or project root)
-DATA_PATH = os.path.join(BASE_DIR, "question_bank", "题库_整合.json")
-PROGRESS_PATH = os.path.join(BASE_DIR, "user_progress.json")
+# Paths for data
+if getattr(sys, 'frozen', False):
+    # In production, keep progress and data next to the EXE
+    DATA_PATH = os.path.abspath(os.path.join(BASE_DIR, "question_bank", "题库_整合.json"))
+    PROGRESS_PATH = os.path.abspath(os.path.join(BASE_DIR, "user_progress.json"))
+else:
+    # In development, keep them in the project root or dist folder
+    DATA_PATH = os.path.abspath(os.path.join(BASE_DIR, "question_bank", "题库_整合.json"))
+    PROGRESS_PATH = os.path.abspath(os.path.join(BASE_DIR, "dist", "user_progress.json"))
+
+if not os.path.exists(os.path.dirname(PROGRESS_PATH)):
+    os.makedirs(os.path.dirname(PROGRESS_PATH), exist_ok=True)
+# If it doesn't exist in dist, but exists in root, move it or just use root
+if not os.path.exists(PROGRESS_PATH):
+    root_progress = os.path.abspath(os.path.join(BASE_DIR, "user_progress.json"))
+    if os.path.exists(root_progress):
+        PROGRESS_PATH = root_progress
 
 # Path for static files (frontend dist)
 STATIC_DIR = os.path.join(RESOURCES_DIR, "frontend", "dist")
@@ -119,14 +151,41 @@ def get_filters():
     }
 
 @app.get("/api/questions", response_model=List[Question])
-def get_questions(category: Optional[str] = None, type: Optional[str] = None):
-    global questions_db
-    questions_db = load_questions() # Reload to get latest
-    filtered = questions_db
+def get_questions(category: Optional[str] = None, type: Optional[str] = None, mode: str = "all"):
+    # Reload to get latest
+    all_qs = load_questions()
+    progress = load_progress()
+    # Ensure IDs are compared correctly as integers
+    history = set(int(hid) for hid in progress.get("history", []))
+    wrong_questions = set(int(wid) for wid in progress.get("wrong_questions", []))
+    
+    # Start with all
+    filtered = all_qs
+    
+    # Filter by mode first
+    if mode == "done":
+        filtered = [q for q in all_qs if int(q["id"]) in history]
+    elif mode == "undone":
+        filtered = [q for q in all_qs if int(q["id"]) not in history]
+    elif mode == "recommend":
+        # Smart recommendation
+        wrong = [q for q in all_qs if int(q["id"]) in wrong_questions]
+        undone = [q for q in all_qs if int(q["id"]) not in history and int(q["id"]) not in wrong_questions]
+        done = [q for q in all_qs if int(q["id"]) in history and int(q["id"]) not in wrong_questions]
+        
+        import random
+        random.shuffle(wrong)
+        random.shuffle(undone)
+        random.shuffle(done)
+        filtered = wrong + undone + done
+    # If mode is "all", we keep all_qs
+
+    # Then filter by category and type
     if category:
         filtered = [q for q in filtered if q["category"] == category]
     if type:
         filtered = [q for q in filtered if q["type"] == type]
+        
     return filtered
 
 @app.post("/api/questions", response_model=Question)
@@ -210,6 +269,13 @@ def report_question(report: ReportRequest):
     
     # Update total stats
     progress["total_answered"] = progress.get("total_answered", 0) + 1
+    
+    # Track history (all answered questions)
+    if "history" not in progress:
+        progress["history"] = []
+    if report.question_id not in progress["history"]:
+        progress["history"].append(report.question_id)
+
     if report.is_correct:
         progress["correct_answered"] = progress.get("correct_answered", 0) + 1
         # Remove from wrong questions if it was there and now correct
@@ -277,22 +343,36 @@ def open_browser():
     webbrowser.open("http://127.0.0.1:8000")
 
 if __name__ == "__main__":
-    # Fix for PyInstaller windowed mode where sys.stdout/stderr are None
-    if getattr(sys, 'frozen', False):
+    # Essential for PyInstaller + multiprocessing
+    multiprocessing.freeze_support()
+
+    # Fix for PyInstaller windowed mode: sys.stdout/stderr are None
+    if sys.platform == 'win32' and getattr(sys, 'frozen', False):
+        import os
         if sys.stdout is None:
             sys.stdout = open(os.devnull, 'w')
         if sys.stderr is None:
             sys.stderr = open(os.devnull, 'w')
 
-    # In production, we don't want reload
-    is_prod = getattr(sys, 'frozen', False)
+    # Ensure logs are visible
+    print(f"Starting server... DATA_PATH: {DATA_PATH}, PROGRESS_PATH: {PROGRESS_PATH}")
     
-    if is_prod:
-        # Open browser in a separate thread/process
-        multiprocessing.freeze_support()
-        import threading
-        threading.Timer(1.5, open_browser).start()
-        # Use log_config=None to avoid uvicorn's default logging config crash in frozen apps
+    # Start heartbeat monitor
+    threading.Thread(target=monitor_heartbeat, daemon=True).start()
+
+    # Open browser in a separate thread after a short delay
+    import threading
+    import time
+    def delayed_open():
+        time.sleep(1.5)
+        open_browser()
+    threading.Thread(target=delayed_open, daemon=True).start()
+
+    # Disable default uvicorn logging config to avoid 'isatty' error in windowed mode
+    try:
         uvicorn.run(app, host="127.0.0.1", port=8000, log_config=None)
-    else:
-        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    except Exception as e:
+        print(f"Error starting server: {e}")
+        import traceback
+        traceback.print_exc()
+        input("Press Enter to exit...")
