@@ -55,6 +55,17 @@
    npm run dev
    ```
 
+### 🛠️ 打包发布 (Windows)
+
+项目提供了一个自动化的打包脚本 `build.ps1`：
+
+1. 确保已安装 Node.js 和 Python 依赖。
+2. 在项目根目录运行：
+   ```powershell
+   .\build.ps1
+   ```
+3. 脚本会自动构建前端并生成 `release` 文件夹，其中包含 `MySQL考试练习系统.exe` 和必要的资源文件。
+
 ## 📂 项目结构
 
 ```text
